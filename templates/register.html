@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <title>Форма регистрации)</title>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="../static/css/bootstrap.min.css" crossorigin="anonymous">
+    <link rel="stylesheet" href="../static/css/register.css" crossorigin="anonymous">
+</head>
+
+<body>
+    <div class="container-fluid" style="background: transparent">
+        <div class="row align-center">
+            <div class="col">
+                <div class="login d-flex align-items-center py-5">
+                    <div class="container form-special">
+                        <div class="row">
+                            <div class="col-md-9 col-lg-8 mx-auto">
+                                <h3 class="login-heading mb-4">Форма регистрации в системе "График событий"</h3>
+                                <form method="post" action="/register">
+                                    <div class="form-label-group">
+                                        <input name="fullname" type="text" id="fullname" class="form-control" placeholder="Иванов Иван Иванович" required autofocus>
+                                        <label for="fullname">Введите ФИО (Например: Иванов Иван Иванович)</label>
+                                    </div>
+                                    <div class="form-label-group">
+                                        <input name="login" type="login" id="inputEmail" class="form-control" placeholder="login" required>
+                                        <label for="inputEmail">Введите логин</label>
+                                    </div>
+                                    <div class="form-label-group">
+                                        <input name="password" type="text" id="inputPassword" class="form-control" placeholder="Password" required>
+                                        <label for="inputPassword">Введите пароль</label>
+                                    </div>
+                                    <button class="btn btn-lg btn-primary btn-block btn-login text-uppercase font-weight-bold mb-2" id="submit" type="submit">Зарегистрироваться</button>
+
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="static/js/jquery-3.3.1.slim.min.js" crossorigin="anonymous"></script>
+    <script src="static/js/popper.min.js" crossorigin="anonymous"></script>
+    <script src="static/js/bootstrap.min.js" crossorigin="anonymous"></script>
+</body>
+
+</html>

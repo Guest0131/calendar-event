@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+
+    <script>
+        // Ignore this in your implementation
+        window.isMbscDemo = false;
+    </script>
+
+    <title>Календарь событий</title>
+
+    <script src="../static/js/jquery.min.js"></script>
+
+    <!-- Mobiscroll JS and CSS Includes -->
+    <link rel="stylesheet" href="../static/css/mobiscroll.jquery.min.css">
+    <script src="../static/js/mobiscroll.jquery.min.js"></script>
+    <link href="../static/css/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
+
+  
+
+    <style type="text/css">
+    body {
+        margin: 0;
+        padding: 0;
+    }
+
+    body,
+    html {
+        height: 100%;
+    }
+
+    </style>
+
+</head>
+<body>
+<nav class="navbar navbar-light bg-light justify-content-between">
+  <a class="navbar-brand">Календарь событий </a>
+  <form class="form-inline" method='POST' action='/'>
+    <a class="navbar-brand" >{{ name }}</a>
+    <input class="btn btn-outline-danger my-2 my-sm-0" type="submit" value="Выйти" />
+  </form>
+</nav>
+<div mbsc-page class="demo-create-read-update-delete-CRUD">
+  <div style="height:100%">
+      <div id="demo-add-delete-event"></div>
+    
+    <div id="demo-add-popup">
+        <div class="mbsc-form-group">
+            <label>
+                Заголовок
+                <input mbsc-input id="event-title">
+            </label>
+            <label>
+                Описание
+                <textarea mbsc-textarea id="event-desc"></textarea>
+            </label>
+            <label>
+                Цвет
+                <input mbsc-input id="event-color" name="event" type="color" />
+        
+            </label>
+        </div>
+        <div class="mbsc-form-group">
+            <label for="start-input">
+                Начало
+                <input mbsc-input id="start-input" />
+            </label>
+            <label for="end-input">
+                Конец
+                <input mbsc-input id="end-input" />
+            </label>
+            <div id="event-date"></div>
+            <div class="mbsc-button-group">
+                <button class="mbsc-button-block" id="event-delete" mbsc-button data-color="danger" data-variant="outline">Удалить событие</button>
+            </div>
+        </div>
+    </div>
+  </div>
+</div>
+
+<script>
+
+    
+
+    mobiscroll.setOptions({
+        locale: mobiscroll.localeRu,           // Specify language like: locale: mobiscroll.localePl or omit setting to use default
+        theme: 'ios',                          // Specify theme like: theme: 'ios' or omit setting to use default
+        themeVariant: 'light'              // More info about themeVariant: https://docs.mobiscroll.com/5-5-0/eventcalendar#opt-themeVariant
+    });
+    
+    $(function () {
+        var oldEvent,
+            tempEvent = {},
+            deleteEvent,
+            restoreEvent,
+            $title = $('#event-title'),
+            $description = $('#event-desc'),
+            $statusFree = $('#event-status-free'),
+            $statusBusy = $('#event-status-busy'),
+            $deleteButton = $('#event-delete'),
+            $color = $('#event-color'),
+            datePickerResponsive = {
+                medium: {
+                    controls: ['calendar'],
+                    touchUi: false
+                }
+            },
+            datetimePickerResponsive = {
+                medium: {
+                    controls: ['calendar', 'time'],
+                    touchUi: false
+                }
+            },
+            now = new Date(),
+            myData = [
+            {% for v in data %}
+            {
+                id: {{ loop.index }},
+                start: new Date({{ v.start.year }}, {{ v.start.month }}, {{ v.start.day }}, {{ v.start.hour }}, {{ v.start.minute }} ),
+                end: new Date({{ v.end.year }}, {{ v.end.month }}, {{ v.end.day }}, {{ v.end.hour }}, {{ v.end.minute }} ),
+                title: "{{ v.title }}",
+                description: '{{ v.description }}',
+                color : "{{ v.color }}"
+
+            },
+            {% endfor %}
+            ];
+
+    
+        function createAddPopup(elm) {
+            // hide delete button inside add popup
+            $deleteButton.hide();
+    
+            deleteEvent = true;
+            restoreEvent = false;
+    
+            // set popup header text and buttons for adding
+            popup.setOptions({
+                headerText: 'New event',       // More info about headerText: https://docs.mobiscroll.com/5-5-0/eventcalendar#opt-headerText
+                buttons: [ {          // More info about buttons: https://docs.mobiscroll.com/5-5-0/eventcalendar#opt-buttons
+                    text: 'Добавить',
+                    keyCode: 'enter',
+                    handler: function () {
+                        calendar.updateEvent({
+                            id: tempEvent.id,
+                            title: tempEvent.title,
+                            description: tempEvent.description,
+                            start: tempEvent.start,
+                            end: tempEvent.end,
+                            color: tempEvent.color,
+                        });
+    
+                        // navigate the calendar to the correct view
+                        calendar.navigate(tempEvent.start);
+    
+                        deleteEvent = false;
+
+                        $.ajax({
+                            url: '/api',
+                            method: 'post',             
+                            dataType: 'html',
+                            data: {
+                                action : 'addEvent',
+                                id: tempEvent.id,
+                                title: tempEvent.title,
+                                description: tempEvent.description,
+                                start: {
+                                    year   : tempEvent.start.getFullYear(),
+                                    month  : tempEvent.start.getMonth(),
+                                    day    : tempEvent.start.getDate(),
+                                    hour   : tempEvent.start.getHours(),
+                                    minute : tempEvent.start.getMinutes(),
+                                    
+                                },
+                                end: {
+                                    year   : tempEvent.end.getFullYear(),
+                                    month  : tempEvent.end.getMonth(),
+                                    day    : tempEvent.end.getDate(),
+                                    hour   : tempEvent.end.getHours(),
+                                    minute : tempEvent.end.getMinutes(),
+                                },
+                                color: tempEvent.color,
+                            },
+                            success : function () {
+                                location.reload()
+                            }
+                        });
+                        
+                        console.log("Добавлено новое событие");
+                        
+                    
+                        popup.close();
+                    },
+                    cssClass: 'mbsc-popup-button-primary'
+                }]
+            });
+
+    
+            // fill popup with a new event data
+            $title.mobiscroll('getInst').value = tempEvent.title;
+            $description.mobiscroll('getInst').value = '';
+
+            range.setVal([tempEvent.start, tempEvent.end]);
+            $statusBusy.mobiscroll('getInst').checked = true;
+            range.setOptions({ controls: ['date'], responsive: datePickerResponsive });
+    
+            // set anchor for the popup
+            popup.setOptions({ anchor: elm });
+    
+            popup.open();
+        }
+    
+        function createEditPopup(args) {
+            var ev = args.event;
+            // show delete button inside edit popup
+            $deleteButton.show();
+    
+            deleteEvent = false;
+            restoreEvent = true;
+    
+            // set popup header text and buttons for editing
+            popup.setOptions({
+                headerText: 'Редактировать событие',      // More info about headerText: https://docs.mobiscroll.com/5-5-0/eventcalendar#opt-headerText
+                buttons: [{          // More info about buttons: https://docs.mobiscroll.com/5-5-0/eventcalendar#opt-buttons
+                    text: 'Сохранить',
+                    keyCode: 'enter',
+                    handler: function () {
+                        var date = range.getVal();
+    
+                        // update event with the new properties on save button click
+                        calendar.updateEvent({
+                            id: ev.id,
+                            title: $title.val(),
+                            description: $description.val(),
+
+                            start: date[0],
+                            end: date[1],
+                            color: ev.color,
+                        });
+
+                        console.log(ev);
+                        // Тут изменение события
+                        $.ajax({
+                            url: '/api',
+                            method: 'post',             
+                            dataType: 'html',
+                            data: {
+                                action : 'editEvent',
+                                id: ev.id,
+                                title: $title.val(),
+                                description: $description.val(),
+                                start: {
+                                    year   : date[0].getFullYear(),
+                                    month  : date[0].getMonth(),
+                                    day    : date[0].getDate(),
+                                    hour   : date[0].getHours(),
+                                    minute : date[0].getMinutes(),
+                                    
+                                },
+                                end: {
+                                    year   : date[1].getFullYear(),
+                                    month  : date[1].getMonth(),
+                                    day    : date[1].getDate(),
+                                    hour   : date[1].getHours(),
+                                    minute : date[1].getMinutes(),
+                                },
+                                color: ev.color,
+                            },
+                            success : function () {
+                                location.reload()
+                            }
+                            
+                        });
+                        
+                        // navigate the calendar to the correct view
+                        calendar.navigate(date[0]);;
+
+                        console.log("Событие изменено");
+                        restoreEvent = false;
+                        popup.close();
+                    },
+                    cssClass: 'mbsc-popup-button-primary'
+                }]
+            });
+    
+            // fill popup with the selected event data
+            $title.mobiscroll('getInst').value = ev.title || '';
+            $description.mobiscroll('getInst').value = ev.description || '';
+
+            range.setVal([ev.start, ev.end]);
+    
+            if (ev.free) {
+                $statusFree.mobiscroll('getInst').checked = true;
+            } else {
+                $statusBusy.mobiscroll('getInst').checked = true;
+            }
+    
+
+    
+            // set anchor for the popup
+            popup.setOptions({ anchor: args.domEvent.currentTarget });
+            popup.open();
+        }
+    
+        var calendar = $('#demo-add-delete-event').mobiscroll().eventcalendar({
+            clickToCreate: 'double',           // More info about clickToCreate: https://docs.mobiscroll.com/5-5-0/eventcalendar#opt-clickToCreate
+            dragToCreate: true,                // More info about dragToCreate: https://docs.mobiscroll.com/5-5-0/eventcalendar#opt-dragToCreate
+            dragToMove: false,                  // More info about dragToMove: https://docs.mobiscroll.com/5-5-0/eventcalendar#opt-dragToMove
+            dragToResize: false,                // More info about dragToResize: https://docs.mobiscroll.com/5-5-0/eventcalendar#opt-dragToResize
+            view: {                            // More info about view: https://docs.mobiscroll.com/5-5-0/eventcalendar#opt-view
+                calendar: { labels: true }
+            },
+            data: myData,                      // More info about data: https://docs.mobiscroll.com/5-5-0/eventcalendar#opt-data
+            onEventClick: function (args) {    // More info about onEventClick: https://docs.mobiscroll.com/5-5-0/eventcalendar#event-onEventClick
+                oldEvent = { ...args.event };
+                tempEvent = args.event;
+    
+                if (!popup.isVisible()) {
+                    createEditPopup(args);
+                }
+            },
+            onEventCreated: function (args) {  // More info about onEventCreated: https://docs.mobiscroll.com/5-5-0/eventcalendar#event-onEventCreated
+                popup.close();
+    
+                // store temporary event
+                tempEvent = args.event;
+                createAddPopup(args.target);
+                
+            },
+            onEventDeleted: function (event, inst) {      // More info about onEventDeleted: https://docs.mobiscroll.com/5-5-0/eventcalendar#event-onEventDeleted;
+                
+                mobiscroll.snackbar({ 
+                    message: 'Событие удалено'
+                });
+            }
+        }).mobiscroll('getInst');
+
+    
+        var popup = $('#demo-add-popup').mobiscroll().popup({
+            display: 'bottom',                 // Specify display mode like: display: 'bottom' or omit setting to use default
+            contentPadding: false,
+            fullScreen: true,
+            onClose: function () {             // More info about onClose: https://docs.mobiscroll.com/5-5-0/eventcalendar#event-onClose
+                if (deleteEvent) {
+                    calendar.removeEvent(tempEvent);
+                } else if (restoreEvent) {
+                    calendar.updateEvent(oldEvent);
+                }
+            },
+            responsive: {                      // More info about responsive: https://docs.mobiscroll.com/5-5-0/eventcalendar#opt-responsive
+                medium: {
+                    display: 'anchored',       // Specify display mode like: display: 'bottom' or omit setting to use default
+                    width: 400,                // More info about width: https://docs.mobiscroll.com/5-5-0/eventcalendar#opt-width
+                    fullScreen: false,
+                    touchUi: false
+                }
+            }
+        }).mobiscroll('getInst');
+    
+        $title.on('input', function (ev) {
+            // update current event's title
+            tempEvent.title = ev.target.value;
+        });
+
+        $color.on('change', function (ev) {
+            tempEvent.color = ev.target.value;
+        });
+    
+        $description.on('change', function (ev) {
+            // update current event's title
+            tempEvent.description = ev.target.value;
+        });
+    
+        
+    
+        var range = $('#event-date').mobiscroll().datepicker({
+            theme: 'ios',
+            controls: ['date'],
+            select: 'range',
+            startInput: '#start-input',
+            endInput: '#end-input',
+            showRangeLabels: false,
+            touchUi: true,
+            responsive: datePickerResponsive,  // More info about responsive: https://docs.mobiscroll.com/5-5-0/eventcalendar#opt-responsive
+            onChange: function (args) {
+                var date = args.value;
+    
+                // update event's start date
+                tempEvent.start = date[0];
+                tempEvent.end = date[1];
+            }
+        }).mobiscroll('getInst');
+    
+        $('input[name=event-status]').on('change', function () {
+            // update current event's free property
+            tempEvent.free = $statusFree.mobiscroll('getInst').checked;
+        });
+    
+        $deleteButton.on('click', function () {
+            // delete current event on button click
+            calendar.removeEvent(oldEvent);
+            
+            $.ajax({
+                    url: '/api',
+                    method: 'post',             
+                    dataType: 'html',
+                    data: {
+                        action : 'deleteEvent',
+                        id: oldEvent.id,
+                    },
+                    success : function () {
+                        location.reload()
+                    }
+                })
+
+            popup.close();
+    
+            mobiscroll.snackbar({ 
+                
+                message: 'Событие удалено'
+            });
+        });
+    });
+
+    function clearTRIAL() {
+        $('div').filter(function() {
+            return $(this).text() == 'TRIAL';
+        }).each(function() {
+            this.textContent = '';
+        })
+    }
+
+    
+    $(document).click(setTimeout(clearTRIAL, 100))
+    setTimeout(clearTRIAL, 100)
+    
+       
+</script>
+
+</body>
+</html>
